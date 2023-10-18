@@ -1,4 +1,4 @@
-import {FileVideo, Github, Upload, Wand2} from 'lucide-react';
+import {Github, Wand2} from 'lucide-react';
 import {Button} from './components/ui/button';
 import {Separator} from './components/ui/separator';
 import {Textarea} from './components/ui/textarea';
@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from './components/ui/select';
 import {Slider} from './components/ui/slider';
+import {VideoInputForm} from './components/video-input-form';
 
 export function App() {
   return (
@@ -55,46 +56,7 @@ export function App() {
         </div>
 
         <aside className="flex w-80 flex-col gap-6">
-          <form className="flex flex-col gap-6">
-            <div>
-              <label
-                className="flex aspect-video w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed text-sm text-muted-foreground hover:border-ring hover:bg-primary/10"
-                htmlFor="video"
-              >
-                <FileVideo className="h-4 w-4" />
-                Carregar video
-              </label>
-
-              <input
-                className="sr-only"
-                type="file"
-                name="video"
-                id="video"
-                accept="video/mp4"
-              />
-            </div>
-
-            <Separator />
-
-            <div className="flex flex-col gap-6">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="transcription_prompt">
-                  Prompt para transcrição
-                </Label>
-
-                <Textarea
-                  className="h-20 resize-none leading-relaxed"
-                  id="transcription_prompt"
-                  placeholder="Inclua palavras-chave mencionadas no vídeo separadas por vírgula ( , )"
-                />
-              </div>
-
-              <Button className="w-full gap-2" type="submit">
-                Carregar vídeo
-                <Upload className="h-4 w-4" />
-              </Button>
-            </div>
-          </form>
+          <VideoInputForm />
 
           <Separator />
 
