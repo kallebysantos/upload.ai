@@ -9,7 +9,10 @@ lerna-debug.log*
 
 node_modules
 *.local
-
+.env
+*.db
+*.db-journal
+tmp/
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -20,6 +23,3 @@ node_modules
 *.njsproj
 *.sln
 *.sw?
-.env
-*.db
-*.db-journal
