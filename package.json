@@ -1,0 +1,19 @@
+{
+  "name": "upload-ai",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:kallebysantos/upload.ai.git",
+  "author": "kallebysantos <kalleby_santos@hotmail.com>",
+  "license": "MIT",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "upload-ai-api",
+      "upload-ai-web"
+    ]
+  },
+  "scripts": {
+    "dev:api": "yarn workspace upload-ai-api dev",
+    "dev:web": "yarn workspace upload-ai-web dev"
+  }
+}
