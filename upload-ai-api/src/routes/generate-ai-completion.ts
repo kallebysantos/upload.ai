@@ -1,5 +1,6 @@
 import * as Schema from "yup";
 import { FastifyInstance } from "fastify";
+import { streamToResponse, OpenAIStream } from "ai";
 
 import { openai } from "../lib/openai";
 import { isNotFoundError, prisma } from "../lib/prisma";
@@ -8,14 +9,14 @@ const requiredUUID = Schema.string().trim().default("").uuid().required();
 
 const bodySchema = Schema.object({
   videoId: requiredUUID,
-  template: Schema.string().trim().default("").required(),
+  prompt: Schema.string().trim().default("").required(),
   temperature: Schema.number().min(0).max(1).default(0.5).required(),
 });
 
 export async function generateAICompletionRoute(app: FastifyInstance) {
   app.post("/ai/completion", async (request, reply) => {
     try {
-      const { videoId, template, temperature } = await bodySchema.validate(
+      const { videoId, prompt, temperature } = await bodySchema.validate(
         request.body
       );
 
@@ -29,7 +30,7 @@ export async function generateAICompletionRoute(app: FastifyInstance) {
           .send({ error: "Video transcription was not generated yet." });
       }
 
-      const promptMessage = template.replace(
+      const promptMessage = prompt.replace(
         "{transcription}",
         video.transcription
       );
@@ -38,9 +39,17 @@ export async function generateAICompletionRoute(app: FastifyInstance) {
         model: "gpt-3.5-turbo-16k",
         temperature,
         messages: [{ role: "user", content: promptMessage }],
+        stream: true,
       });
 
-      return response;
+      const stream = OpenAIStream(response);
+
+      streamToResponse(stream, reply.raw, {
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST",
+        },
+      });
     } catch (err) {
       console.error(generateAICompletionRoute, err);
 

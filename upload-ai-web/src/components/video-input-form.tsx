@@ -10,7 +10,7 @@ import {Separator} from './ui/separator';
 import {fetchFile} from '@ffmpeg/util';
 import {http} from '@/lib/http';
 
-type UploadVideoResponse = {
+export type Video = {
   id: string;
   name: string;
   path: string;
@@ -18,10 +18,18 @@ type UploadVideoResponse = {
   created_at: Date;
 };
 
+type TranscriptionResponse = {
+  transcription: string;
+};
+
 type Status = 'waiting' | 'converting' | 'uploading' | 'generating' | 'success';
 
 type StatusMessage = {
   [key in Status]: string;
+};
+
+type VideoInputFormProps = {
+  onVideoUploaded: (video: Video) => void;
 };
 
 const statusMessages: StatusMessage = {
@@ -32,7 +40,7 @@ const statusMessages: StatusMessage = {
   success: 'Sucesso!',
 };
 
-export function VideoInputForm() {
+export function VideoInputForm({onVideoUploaded}: VideoInputFormProps) {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [status, setStatus] = useState<Status>('waiting');
   const promptInputRef = useRef<HTMLTextAreaElement>(null);
@@ -87,30 +95,30 @@ export function VideoInputForm() {
   async function handleUpload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const prompt = promptInputRef.current?.value;
-
     if (!videoFile) return;
 
     setStatus('converting');
-
     const audioFile = await convertVideoToAudio(videoFile);
 
     setStatus('uploading');
-    const uploadResponse = await http.upload<UploadVideoResponse>(
-      '/videos',
-      audioFile,
-    );
-
-    const {id: videoId} = await uploadResponse.json();
+    const video = await (await http.upload<Video>('/videos', audioFile)).json();
 
     setStatus('generating');
-    const transcriptionResponse = await http.post(
-      `/videos/${videoId}/transcription`,
-      {prompt},
-    );
+    const prompt = promptInputRef.current?.value;
+
+    console.log(video);
+
+    const {transcription} = await (
+      await http.post<TranscriptionResponse>(
+        `/videos/${video.id}/transcription`,
+        {prompt},
+      )
+    ).json();
 
     setStatus('success');
-    console.log(transcriptionResponse);
+    video.transcription = transcription;
+
+    onVideoUploaded(video);
   }
 
   return (

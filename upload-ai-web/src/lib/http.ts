@@ -12,12 +12,17 @@ interface HttpResponse<T = unknown> extends Response {
 
 type HttpProvider = HttpProviderImplementation & {
   <T>(path: RequestInfo, options?: HttpRequestInit): Promise<HttpResponse<T>>;
-  config: HttpProviderConfig;
+  config: HttpProviderConfig & HttpProviderConfigImplementation;
 };
 
 type HttpProviderConfig = {
   baseUrl: string;
   authorization?: string;
+  headers?: Record<string, string> | Headers;
+};
+
+type HttpProviderConfigImplementation = {
+  getAuthorizationHeader: () => string;
 };
 
 type HttpProviderImplementation = {
@@ -38,7 +43,15 @@ type HttpProviderImplementation = {
 
 export const getDefaultHttpConfig = (): HttpProviderConfig => ({
   baseUrl: 'http://127.0.0.1:3333',
+  headers: {
+    Accept: 'application/json',
+  },
 });
+
+const httpConfigImpl: HttpProviderConfigImplementation = {
+  getAuthorizationHeader: () =>
+    http.config.authorization ? `Bearer ${http.config.authorization}` : '',
+};
 
 const httpImpl: HttpProviderImplementation = {
   uri(path, params) {
@@ -62,9 +75,6 @@ const httpImpl: HttpProviderImplementation = {
       ...options,
       method: 'POST',
       body: data,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
     });
   },
 };
@@ -73,13 +83,13 @@ const fetchWrapper = (path: RequestInfo, options?: HttpRequestInit) =>
   fetch(httpImpl.uri(path, options?.params), {
     ...options,
     headers: {
-      // Authorization: `Bearer ${http.config.authorization}`,
-      Accept: 'application/json',
+      Authorization: http.config.getAuthorizationHeader(),
+      ...http.config.headers,
       ...options?.headers,
     },
   });
 
 export const http: HttpProvider = Object.assign(fetchWrapper, {
-  config: getDefaultHttpConfig(),
+  config: {...getDefaultHttpConfig(), ...httpConfigImpl},
   ...httpImpl,
 });

@@ -1,8 +1,14 @@
+import {useState} from 'react';
+import {useCompletion} from 'ai/react';
 import {Github, Wand2} from 'lucide-react';
+
+import {http} from './lib/http';
+
 import {Button} from './components/ui/button';
 import {Separator} from './components/ui/separator';
 import {Textarea} from './components/ui/textarea';
 import {Label} from './components/ui/label';
+import {Slider} from './components/ui/slider';
 import {
   Select,
   SelectContent,
@@ -10,10 +16,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from './components/ui/select';
-import {Slider} from './components/ui/slider';
-import {VideoInputForm} from './components/video-input-form';
+
+import {Video, VideoInputForm} from './components/video-input-form';
+import {PromptSelect} from './components/prompt-select';
 
 export function App() {
+  const [temperature, setTemperature] = useState(0.5);
+  const [video, setVideo] = useState<Video>();
+
+  const {
+    input,
+    completion,
+    isLoading,
+    setInput,
+    handleInputChange,
+    handleSubmit,
+  } = useCompletion({
+    api: http.uri('/ai/completion'),
+    headers: {
+      ...http.config.headers,
+      'Content-Type': 'application/json',
+    },
+    body: {
+      videoId: video?.id,
+      temperature,
+    },
+  });
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="flex items-center justify-between border-b px-6 py-3">
@@ -39,11 +68,14 @@ export function App() {
             <Textarea
               className="resize-none p-5 leading-relaxed"
               placeholder="Inclua o prompt para a IA..."
+              value={input}
+              onChange={handleInputChange}
             />
 
             <Textarea
               className="resize-none p-5 leading-relaxed"
               placeholder="Resultado gerado pela IA..."
+              value={completion}
               readOnly
             />
           </div>
@@ -56,26 +88,17 @@ export function App() {
         </div>
 
         <aside className="flex w-80 flex-col gap-6">
-          <VideoInputForm />
+          <VideoInputForm onVideoUploaded={setVideo} />
 
           <Separator />
 
-          <form className="flex flex-col gap-6">
+          <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
             <div className="flex flex-col gap-2">
               <Label>Prompt</Label>
 
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um prompt..." />
-                </SelectTrigger>
-
-                <SelectContent>
-                  <SelectItem value="title">Título do YouTube</SelectItem>
-                  <SelectItem value="description">
-                    Descrição do YouTube
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <PromptSelect
+                onPromptSelect={prompt => setInput(prompt.template)}
+              />
 
               <span className="text-sm italic text-muted-foreground">
                 Você poderá customizar essa opção em breve
@@ -105,7 +128,13 @@ export function App() {
             <div className="flex flex-col gap-4">
               <Label>Temperatura</Label>
 
-              <Slider min={0} max={1} step={0.1} />
+              <Slider
+                min={0}
+                max={1}
+                step={0.1}
+                value={[temperature]}
+                onValueChange={value => setTemperature(value[0])}
+              />
 
               <span className="text-sm italic text-muted-foreground">
                 Valores mais altos tendem a deixar o resultado mais criativo,
@@ -116,7 +145,11 @@ export function App() {
             <Separator />
 
             <div>
-              <Button className="w-full gap-2">
+              <Button
+                className="w-full gap-2"
+                type="submit"
+                disabled={!video || isLoading}
+              >
                 Executar
                 <Wand2 className="h-4 w-4" />
               </Button>
