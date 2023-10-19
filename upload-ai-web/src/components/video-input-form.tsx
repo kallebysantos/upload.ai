@@ -8,9 +8,33 @@ import {Button} from './ui/button';
 import {Textarea} from './ui/textarea';
 import {Separator} from './ui/separator';
 import {fetchFile} from '@ffmpeg/util';
+import {http} from '@/lib/http';
+
+type UploadVideoResponse = {
+  id: string;
+  name: string;
+  path: string;
+  transcription: string | null;
+  created_at: Date;
+};
+
+type Status = 'waiting' | 'converting' | 'uploading' | 'generating' | 'success';
+
+type StatusMessage = {
+  [key in Status]: string;
+};
+
+const statusMessages: StatusMessage = {
+  waiting: 'Aguardando...',
+  converting: 'Convertendo...',
+  uploading: 'Carregando...',
+  generating: 'Transcrevendo...',
+  success: 'Sucesso!',
+};
 
 export function VideoInputForm() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [status, setStatus] = useState<Status>('waiting');
   const promptInputRef = useRef<HTMLTextAreaElement>(null);
 
   const previewURL = useMemo(() => {
@@ -63,12 +87,30 @@ export function VideoInputForm() {
   async function handleUpload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    // const prompt = promptInputRef.current?.value;
+    const prompt = promptInputRef.current?.value;
 
     if (!videoFile) return;
 
+    setStatus('converting');
+
     const audioFile = await convertVideoToAudio(videoFile);
-    console.log(audioFile);
+
+    setStatus('uploading');
+    const uploadResponse = await http.upload<UploadVideoResponse>(
+      '/videos',
+      audioFile,
+    );
+
+    const {id: videoId} = await uploadResponse.json();
+
+    setStatus('generating');
+    const transcriptionResponse = await http.post(
+      `/videos/${videoId}/transcription`,
+      {prompt},
+    );
+
+    setStatus('success');
+    console.log(transcriptionResponse);
   }
 
   return (
@@ -111,14 +153,26 @@ export function VideoInputForm() {
           <Textarea
             className="h-20 resize-none leading-relaxed"
             ref={promptInputRef}
+            disabled={status !== 'waiting'}
             id="transcription_prompt"
             placeholder="Inclua palavras-chave mencionadas no vídeo separadas por vírgula ( , )"
           />
         </div>
 
-        <Button className="w-full gap-2" type="submit">
-          Carregar vídeo
-          <Upload className="h-4 w-4" />
+        <Button
+          className="w-full gap-2 data-[status='success']:bg-emerald-500"
+          data-status={status}
+          disabled={status !== 'waiting'}
+          type="submit"
+        >
+          {status === 'waiting' ? (
+            <>
+              Carregar vídeo
+              <Upload className="h-4 w-4" />
+            </>
+          ) : (
+            statusMessages[status]
+          )}
         </Button>
       </div>
     </form>
