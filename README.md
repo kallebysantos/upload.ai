@@ -1,6 +1,6 @@
 <h1 align="center">
-  <img src="" width=256 alt="">
-  <br />
+  <img src="https://github.com/kallebysantos/upload.ai/assets/105971119/b4760597-5a39-47d6-80bb-5d7a0cb29bdd" width="256px" alt="upload.ai">
+   <br />
  upload.ai
 </h1>
 
